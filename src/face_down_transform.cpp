@@ -20,17 +20,13 @@ using namespace std;
 geometry_msgs::PoseStamped roombaPose;
 void pixel2metric_facedown(double alt, vector<double> obj_pix, vector<double> &O_m)
 {
-  
-  double H_p  = PIXLES[1];
-  double angy = (ALPHA/2.0)*(PI/180.0);
-  double H_m  = 2.0*tan(angy)*alt;
+  // find vector from middle of camera
+  double r_p[2] = {0, 0};
+  r_p[0] = obj_pix[0] - PIXLES[0];
+  r_p[1] = obj_pix[1] - PIXLES[1];
 
-  double O_my = (obj_pix[1] /H_p)*H_m;
-  double W_p  = PIXLES[0];
-  double angx = (BETA/2.0)*(PI/180.0);
-
-  double W_m  = 2.0*tan(angx)*alt;
-  double O_mx = (obj_pix[0] /W_p)*W_m;
+  double O_mx = r_p[0]/3779.527;
+  double O_my = (-1.0)*r_p[1]/3779.527;
 
   // O_m[0] = O_mx;
   // O_m[1] = O_my;

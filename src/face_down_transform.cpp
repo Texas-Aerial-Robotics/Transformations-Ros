@@ -13,7 +13,7 @@
 
 const double ALPHA = 31.8244;
 const double BETA  = 40.4497;
-const double PIXLES[2] = {640, 480};
+const double PIXLES[2] = {320, 240};
 const double PI = 3.14159;
 
 using namespace std;
@@ -89,7 +89,7 @@ int main(int argc, char **argv)
     ros::spinOnce();
 
     loop_rate.sleep();
-    ++count;
+
   }
 
 

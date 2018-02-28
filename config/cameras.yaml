@@ -1,0 +1,21 @@
+camera_model:
+
+  camera_one:
+    ID: cam1
+    position: [0.0,0.0,0.0]
+    orientation: [0.0,0.0,0.0,0.0]
+
+  camera_two:
+    ID: cam2
+    position: [0.0,0.0,0.0]
+    orientation: [0.0,0.0,0.0,0.0]
+
+  camera_three:
+    ID: cam3
+    position: [0.0,0.0,0.0]
+    orientation: [0.0,0.0,0.0,0.0]
+
+  camera_four:
+    ID: cam4
+    position: [0.0,0.0,0.0]
+    orientation: [0.0,0.0,0.0,0.0] 

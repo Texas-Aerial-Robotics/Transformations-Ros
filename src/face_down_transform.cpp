@@ -12,6 +12,7 @@
 #include <vector>
 #include <string>
 #include <cmath>
+#include <sensor_msgs/Range.h>
 
 const double ALPHA = 31.8244;
 const double BETA  = 40.4497;
@@ -54,7 +55,7 @@ void pixel2metric_facedown(double x_e, double y_e, double alt, double theta, dou
   ROS_INFO("transformed to x: %f y: %f meters \n", r_x, r_y); 
   roombaPose.pose.position.x = O_my;
   roombaPose.pose.position.y = O_mx;
-  roombaPose.pose.position.z = 1;
+  roombaPose.pose.position.z = rngfnd.range;
 }
 
 void chatterCallback(const std_msgs::Int8::ConstPtr& msg)
@@ -62,6 +63,13 @@ void chatterCallback(const std_msgs::Int8::ConstPtr& msg)
   int num = msg->data;
   //ROS_INFO("%d objects found", num);
 }
+
+sensor_msgs::Range rngfnd;
+void rng_cb(const sensor_msgs::Range::ConstPtr& msg){
+    rngfnd = *msg;
+    ROS_INFO("Range: %f", rngfnd.range); 
+}
+
 void centerPoint(const darknet_ros_msgs::BoundingBoxes::ConstPtr& msgBox)
 {
   darknet_ros_msgs::BoundingBoxes boxesFound;
@@ -79,7 +87,7 @@ void centerPoint(const darknet_ros_msgs::BoundingBoxes::ConstPtr& msgBox)
   }
   double x_e = current_pose.pose.pose.position.x;
   double y_e = current_pose.pose.pose.position.y;
-  double alt = current_pose.pose.pose.position.z;
+  double alt = rngfnd.range;
   double theta = current_heading.data;
   double theta_0 = 0;
   vector<double> obj_pix;
@@ -106,7 +114,7 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "transformations");
   
   ros::NodeHandle n;
-  
+  ros::Subscriber rng_sub = nh.subscribe<sensor_msgs::Range>("mavros/rangefinder/rangefinder",1,rng_cb);
   ros::Subscriber sub2 = n.subscribe("/darknet_ros/bounding_boxes",1 ,centerPoint);
   ros::Subscriber sub = n.subscribe("/darknet_ros/found_object", 1, chatterCallback);
   ros::Subscriber currentPos = n.subscribe<nav_msgs::Odometry>("mavros/global_position/local", 10, pose_cb);

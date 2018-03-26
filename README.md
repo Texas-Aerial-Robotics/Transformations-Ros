@@ -54,3 +54,13 @@ To run yolo, enter the following:
 roslaunch darknet_ros darknet_ros.launch 
 ```
 
+To retrieve data from the pixhawk in a new terminal, run:
+```
+cd ~
+./startup.sh
+```
+
+Now to run the facedown transformation node:
+```
+
+```

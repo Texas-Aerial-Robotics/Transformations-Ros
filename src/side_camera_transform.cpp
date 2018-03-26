@@ -16,7 +16,7 @@ const double PHI = 31.8244*PI/180;
 //fiield of view x
 const_double PHI_X=40*PI/180;
 //rotation angle for y direction
-const double  THETA = 40.4497*PI/180;
+const double  THETA = .9802;
 //rotation angle in x direction
 const double THETA_X=0;
 const double PIXLES[2] = {640, 480};
@@ -24,6 +24,14 @@ const double PIXLES[2] = {640, 480};
 
 using namespace std;
 geometry_msgs::PoseStamped roombaPose;
+nav_msgs::Odometry current_pose;
+//get current position of drone
+void pose_cb(const nav_msgs::Odometry::ConstPtr& msg) 
+{
+  current_pose = *msg;
+  ROS_INFO("x: %f y: %f z: %f", current_pose.pose.pose.position.x, current_pose.pose.pose.position.y, current_pose.pose.pose.position.z);
+}
+
 void pixel2metric_facedown(double alt, vector<double> obj_pix, vector<double> &O_m)
 {	//find puxel of interest in x direction
 	double T_x=obj_pix[0];
@@ -81,7 +89,7 @@ void centerPoint(const darknet_ros_msgs::BoundingBoxes::ConstPtr& msgBox)
     std::string objectType = objectBounds.Class;
     ROS_INFO("%s found x: %f y: %f pixels", objectType.c_str(), xCenter, yCenter); 
   }
-  double alt = 1;
+  double alt = current_pose.pose.pose.position.z;
   vector<double> obj_pix;
   obj_pix.push_back(xCenter);
   obj_pix.push_back(yCenter);

@@ -203,4 +203,5 @@ include_directories(
 add_executable(linearTransformation src/face_down_transform.cpp)
 target_link_libraries(linearTransformation ${catkin_LIBRARIES})
 
-
+add_executable(nonlinearTransformation src/side_camera_transform.cpp)
+target_link_libraries(nonlinearTransformation ${catkin_LIBRARIES})

@@ -22,6 +22,7 @@ nav_msgs::Odometry current_pose;
 std_msgs::Float64 current_heading;
 using namespace std;
 geometry_msgs::PoseStamped roombaPose;
+sensor_msgs::Range rngfnd;
 void pixel2metric_facedown(double x_e, double y_e, double alt, double theta, double theta_0, vector<double> obj_pix, vector<double> &O_m)
 {
   // find vector from middle of camera
@@ -52,7 +53,7 @@ void pixel2metric_facedown(double x_e, double y_e, double alt, double theta, dou
 
   // O_m[0] = O_mx;
   // O_m[1] = O_my;
-  ROS_INFO("transformed to x: %f y: %f meters \n", r_x, r_y); 
+  ROS_INFO("transformed to x: %f y: %f z: %f meters \n", r_x, r_y, rngfnd.range); 
   roombaPose.pose.position.x = O_my;
   roombaPose.pose.position.y = O_mx;
   roombaPose.pose.position.z = rngfnd.range;
@@ -63,11 +64,9 @@ void chatterCallback(const std_msgs::Int8::ConstPtr& msg)
   int num = msg->data;
   //ROS_INFO("%d objects found", num);
 }
-
-sensor_msgs::Range rngfnd;
 void rng_cb(const sensor_msgs::Range::ConstPtr& msg){
     rngfnd = *msg;
-    ROS_INFO("Range: %f", rngfnd.range); 
+    //ROS_INFO("Range: %f", rngfnd.range); 
 }
 
 void centerPoint(const darknet_ros_msgs::BoundingBoxes::ConstPtr& msgBox)
@@ -100,7 +99,7 @@ void centerPoint(const darknet_ros_msgs::BoundingBoxes::ConstPtr& msgBox)
 void pose_cb(const nav_msgs::Odometry::ConstPtr& msg) 
 {
   current_pose = *msg;
-  ROS_INFO("x: %f y: %f z: %f", current_pose.pose.pose.position.x, current_pose.pose.pose.position.y, current_pose.pose.pose.position.z);
+  //ROS_INFO("x: %f y: %f z: %f", current_pose.pose.pose.position.x, current_pose.pose.pose.position.y, current_pose.pose.pose.position.z);
 }
 //get compass heading 
 void heading_cb(const std_msgs::Float64::ConstPtr& msg)
@@ -114,7 +113,7 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "transformations");
   
   ros::NodeHandle n;
-  ros::Subscriber rng_sub = nh.subscribe<sensor_msgs::Range>("mavros/rangefinder/rangefinder",1,rng_cb);
+  ros::Subscriber rng_sub = n.subscribe<sensor_msgs::Range>("mavros/rangefinder/rangefinder",1,rng_cb);
   ros::Subscriber sub2 = n.subscribe("/darknet_ros/bounding_boxes",1 ,centerPoint);
   ros::Subscriber sub = n.subscribe("/darknet_ros/found_object", 1, chatterCallback);
   ros::Subscriber currentPos = n.subscribe<nav_msgs::Odometry>("mavros/global_position/local", 10, pose_cb);

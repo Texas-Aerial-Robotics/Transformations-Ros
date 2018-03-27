@@ -5,6 +5,7 @@
 #include "darknet_ros_msgs/BoundingBox.h"
 #include "darknet_ros_msgs/BoundingBoxes.h"
 #include <geometry_msgs/PoseStamped.h>
+#include <nav_msgs/Odometry.h>
 #include <iostream>
 #include <sstream>
 #include <vector>
@@ -14,12 +15,12 @@ const double PI = 3.14159;
 //field of view y
 const double PHI = 31.8244*PI/180;
 //fiield of view x
-const_double PHI_X=40*PI/180;
+const double PHI_X=40*PI/180;
 //rotation angle for y direction
-const double  THETA = .9802;
+const double  THETA = 0;
 //rotation angle in x direction
 const double THETA_X=0;
-const double PIXLES[2] = {640, 480};
+const double PIXELS[2] = {640, 480};
 
 
 using namespace std;
@@ -29,17 +30,19 @@ nav_msgs::Odometry current_pose;
 void pose_cb(const nav_msgs::Odometry::ConstPtr& msg) 
 {
   current_pose = *msg;
-  ROS_INFO("x: %f y: %f z: %f", current_pose.pose.pose.position.x, current_pose.pose.pose.position.y, current_pose.pose.pose.position.z);
+  //ROS_INFO("x: %f y: %f z: %f", current_pose.pose.pose.position.x, current_pose.pose.pose.position.y, current_pose.pose.pose.position.z);
 }
 
 void pixel2metric_facedown(double alt, vector<double> obj_pix, vector<double> &O_m)
 {	//find puxel of interest in x direction
 	double T_x=obj_pix[0];
 	double psi_x;
-	psi_x=2*abs(T_x/PIXLES[0]*PHI_X-PHI_X/2);
+	double O_mx;
+	double O_my;
+	psi_x=2*abs(T_x/PIXELS[0]*PHI_X-PHI_X/2);
 	if(T_x>PIXELS[0]/2){
-		double O_mx=alt*tan(THETA_X+psi_x/2);
-	}else{O_mx=alt*tan(THETA_X-psi_x/2);
+		 O_mx=alt*tan(THETA_X+psi_x/2);
+	}else{ O_mx=alt*tan(THETA_X-psi_x/2);
 	}
 	
 	
@@ -50,15 +53,16 @@ void pixel2metric_facedown(double alt, vector<double> obj_pix, vector<double> &O
 	
   // find pixel of interest in y direction
   double T_y=obj_pix[1];
-  double psi;
+
+ double psi;
   //calculate slice of field of interest
-  psi=2*abs(T_y/PIXLES[1]*PHI-PHI/2);
+  psi=2*abs(T_y/PIXELS[1]*PHI-PHI/2);
   
 
   //double O_mx = r_p[0]/3779.527;
   if(T_y<PIXELS[1]/2){
-  double O_my = alt*tan(THETA+psi/2);
-  }else{O_my=alt*tan(THETA-psi/2);
+   O_my = alt*tan(THETA+psi/2);
+  }else{ O_my=alt*tan(THETA-psi/2);
   }
   
   // O_m[0] = O_mx;
@@ -102,6 +106,7 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "transformations");
   
   ros::NodeHandle n;
+ros::Subscriber currentPos = n.subscribe<nav_msgs::Odometry>("mavros/global_position/local", 10, pose_cb);
   
   ros::Subscriber sub2 = n.subscribe("/darknet_ros/bounding_boxes",1 ,centerPoint);
   ros::Subscriber sub = n.subscribe("/darknet_ros/found_object", 1, chatterCallback);

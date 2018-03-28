@@ -1,0 +1,12 @@
+cameras:
+  cam1:
+    orientation:
+      roll: 0.0
+      pitch: 40.0
+      yaw: 0.0
+  cam2: 
+    orientation:
+      roll: 0.0
+      pitch: 0.0
+      yaw: 0.0
+

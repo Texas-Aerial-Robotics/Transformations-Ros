@@ -17,7 +17,7 @@ const double PHI = 31.8244*PI/180;
 //fiield of view x
 const double PHI_X=40*PI/180;
 //rotation angle for y direction
-const double  THETA = 0;
+double  THETA = 0;
 //rotation angle in x direction
 const double THETA_X=0;
 const double PIXELS[2] = {640, 480};
@@ -71,6 +71,10 @@ void pixel2metric_facedown(double alt, vector<double> obj_pix, vector<double> &O
   roombaPose.pose.position.x = O_my;
   roombaPose.pose.position.y = O_mx;
   roombaPose.pose.position.z = 1;
+  roombaPose.pose.position.x = O_my +  current_pose.pose.pose.position.x;
+  roombaPose.pose.position.y = O_mx +  current_pose.pose.pose.position.y;
+  roombaPose.pose.position.z = 1;
+ 
 }
 
 void chatterCallback(const std_msgs::Int8::ConstPtr& msg)
@@ -106,12 +110,25 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "transformations");
   
   ros::NodeHandle n;
-ros::Subscriber currentPos = n.subscribe<nav_msgs::Odometry>("mavros/global_position/local", 10, pose_cb);
-  
+  ros::Subscriber currentPos = n.subscribe<nav_msgs::Odometry>("mavros/global_position/local", 10, pose_cb);
   ros::Subscriber sub2 = n.subscribe("/darknet_ros/bounding_boxes",1 ,centerPoint);
   ros::Subscriber sub = n.subscribe("/darknet_ros/found_object", 1, chatterCallback);
   ros::Publisher chatter_pub = n.advertise<geometry_msgs::PoseStamped>("roombaPose", 1000);
 
+
+  float camRoll;
+  float camPitch;
+  float camYaw;
+
+  ros::param::get("/camera_params/cameras/cam2/orientation/roll", camRoll);
+  ros::param::get("/camera_params/cameras/cam2/orientation/pitch", camPitch);
+  ros::param::get("/camera_params/cameras/cam2/orientation/roll", camYaw);
+
+  ROS_INFO("Parameters loaded");
+  ROS_INFO("Camera orientation roll: %f pitch: %f yaw: %f", camRoll, camPitch, camYaw);
+  ROS_INFO("Node Started");
+
+  THETA = camPitch;
   
 
   ros::Rate loop_rate(10);

@@ -2,6 +2,7 @@
 #include "ros/ros.h"
 #include "std_msgs/String.h"
 #include "std_msgs/Int8.h"
+#include "std_msgs/Float64.h"
 #include "darknet_ros_msgs/BoundingBox.h"
 #include "darknet_ros_msgs/BoundingBoxes.h"
 #include <geometry_msgs/PoseStamped.h>
@@ -26,13 +27,35 @@ const double PIXELS[2] = {640, 480};
 using namespace std;
 geometry_msgs::PoseStamped roombaPose;
 nav_msgs::Odometry current_pose;
+std_msgs::Float64 gymOffset;
+void enu_2_gym(nav_msgs::Odometry current_pose_enu)
+{
+  float GYM_OFFSET = gymOffset.data;
+  float x = current_pose_enu.pose.pose.position.x;
+  float y = current_pose_enu.pose.pose.position.y;
+  float z = current_pose_enu.pose.pose.position.z;
+  float deg2rad = (M_PI/180);
+  float X = x*cos(GYM_OFFSET*deg2rad) - y*sin(GYM_OFFSET*deg2rad);
+  float Y = x*sin(GYM_OFFSET*deg2rad) + y*cos(GYM_OFFSET*deg2rad);
+  float Z = z;
+  current_pose.pose.pose.position.x = X;
+  current_pose.pose.pose.position.y = Y;
+  current_pose.pose.pose.position.z = Z;
+
+ 
+}
 //get current position of drone
 void pose_cb(const nav_msgs::Odometry::ConstPtr& msg) 
 {
-  current_pose = *msg;
-  //ROS_INFO("x: %f y: %f z: %f", current_pose.pose.pose.position.x, current_pose.pose.pose.position.y, current_pose.pose.pose.position.z);
+  nav_msgs::Odometry current_pose_enu = *msg;
+  enu_2_gym(current_pose_enu);
+  //ROS_INFO("x: %f y: %f z: %f", current_pose_enu.pose.pose.position.x, current_pose_enu.pose.pose.position.y, current_pose.pose.pose.position_enu.z);
 }
-
+void gym_cb(const std_msgs::Float64::ConstPtr& msg)
+{
+  gymOffset = *msg;
+  //ROS_INFO("current heading: %f", current_heading.data);
+}
 void pixel2metric_facedown(double alt, vector<double> obj_pix, vector<double> &O_m)
 {	//find puxel of interest in x direction
 	double T_x=obj_pix[0];
@@ -42,27 +65,23 @@ void pixel2metric_facedown(double alt, vector<double> obj_pix, vector<double> &O
 	psi_x=2*abs(T_x/PIXELS[0]*PHI_X-PHI_X/2);
 	if(T_x>PIXELS[0]/2){
 		 O_mx=alt*tan(THETA_X+psi_x/2);
-	}else{ O_mx=alt*tan(THETA_X-psi_x/2);
+	}else{ 
+    O_mx=alt*tan(THETA_X-psi_x/2);
 	}
-	
-	
-	
-	
-	
-	
 	
   // find pixel of interest in y direction
   double T_y=obj_pix[1];
 
- double psi;
+  double psi;
   //calculate slice of field of interest
   psi=2*abs(T_y/PIXELS[1]*PHI-PHI/2);
   
 
   //double O_mx = r_p[0]/3779.527;
   if(T_y<PIXELS[1]/2){
-   O_my = alt*tan(THETA+psi/2);
-  }else{ O_my=alt*tan(THETA-psi/2);
+    O_my = alt*tan(THETA+psi/2);
+  }else{ 
+    O_my=alt*tan(THETA-psi/2);  
   }
   
   // O_m[0] = O_mx;
@@ -113,6 +132,7 @@ int main(int argc, char **argv)
   ros::Subscriber currentPos = n.subscribe<nav_msgs::Odometry>("mavros/global_position/local", 10, pose_cb);
   ros::Subscriber sub2 = n.subscribe("/darknet_ros/bounding_boxes",1 ,centerPoint);
   ros::Subscriber sub = n.subscribe("/darknet_ros/found_object", 1, chatterCallback);
+  ros::Subscriber gym_offset_sub = n.subscribe("/gymOffset", 1, gym_cb);
   ros::Publisher chatter_pub = n.advertise<geometry_msgs::PoseStamped>("roombaPose", 1000);
 
 

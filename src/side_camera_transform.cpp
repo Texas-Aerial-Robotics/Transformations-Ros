@@ -41,7 +41,7 @@ void enu_2_gym(nav_msgs::Odometry current_pose_enu)
   current_pose.pose.pose.position.x = X;
   current_pose.pose.pose.position.y = Y;
   current_pose.pose.pose.position.z = Z;
-
+  ROS_INFO("pose gym x: %f y: %f z: %f", current_pose.pose.pose.position.x, current_pose.pose.pose.position.y, current_pose.pose.pose.position.z);
  
 }
 //get current position of drone
@@ -49,7 +49,7 @@ void pose_cb(const nav_msgs::Odometry::ConstPtr& msg)
 {
   nav_msgs::Odometry current_pose_enu = *msg;
   enu_2_gym(current_pose_enu);
-  //ROS_INFO("x: %f y: %f z: %f", current_pose_enu.pose.pose.position.x, current_pose_enu.pose.pose.position.y, current_pose.pose.pose.position_enu.z);
+  //ROS_INFO("pose enu x: %f y: %f z: %f", current_pose_enu.pose.pose.position.x, current_pose_enu.pose.pose.position.y, current_pose.pose.pose.position.z);
 }
 void gym_cb(const std_msgs::Float64::ConstPtr& msg)
 {
@@ -87,12 +87,10 @@ void pixel2metric_facedown(double alt, vector<double> obj_pix, vector<double> &O
   // O_m[0] = O_mx;
   // O_m[1] = O_my;
   ROS_INFO("transformed to x: %f y: %f meters \n", O_mx, O_my); 
-  roombaPose.pose.position.x = O_my;
-  roombaPose.pose.position.y = O_mx;
-  roombaPose.pose.position.z = 1;
-  roombaPose.pose.position.x = O_my +  current_pose.pose.pose.position.x;
-  roombaPose.pose.position.y = O_mx +  current_pose.pose.pose.position.y;
-  roombaPose.pose.position.z = 1;
+  roombaPose.pose.position.x = O_mx + current_pose.pose.pose.position.x;
+  roombaPose.pose.position.y = O_my + current_pose.pose.pose.position.y;
+  roombaPose.pose.position.z = 2.9;
+  ROS_INFO("roombaPose gym x: %f y: %f z: %f", roombaPose.pose.position.x, roombaPose.pose.position.y, roombaPose.pose.position.z);
  
 }
 

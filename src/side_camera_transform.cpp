@@ -18,9 +18,9 @@ const double PHI = 31.8244*PI/180;
 //fiield of view x
 const double PHI_X=40*PI/180;
 //rotation angle for y direction
-double  THETA = 0;
+double  THETA_Y = 0;
 //rotation angle in x direction
-const double THETA_X=0;
+double THETA_X=0;
 const double PIXELS[2] = {640, 480};
 
 
@@ -28,6 +28,15 @@ using namespace std;
 geometry_msgs::PoseStamped roombaPose;
 nav_msgs::Odometry current_pose;
 std_msgs::Float64 gymOffset;
+
+struct orientation
+{
+  float roll;
+  float pitch;
+  float yaw;
+  string frame_id;
+};
+orientation CAMPARAMS[5];
 void enu_2_gym(nav_msgs::Odometry current_pose_enu)
 {
   float GYM_OFFSET = gymOffset.data;
@@ -56,9 +65,10 @@ void gym_cb(const std_msgs::Float64::ConstPtr& msg)
   gymOffset = *msg;
   //ROS_INFO("current heading: %f", current_heading.data);
 }
-void pixel2metric_facedown(double alt, vector<double> obj_pix, vector<double> &O_m)
+void pixel2metric_facedown(double alt, vector<double> obj_pix, vector<double> &O_m, orientation camparamOfFrame)
 {	//find puxel of interest in x direction
-	double T_x=obj_pix[0];
+	THETA_Y = camparamOfFrame.pitch*(M_PI/180);
+  double T_x=obj_pix[0];
 	double psi_x;
 	double O_mx;
 	double O_my;
@@ -79,9 +89,9 @@ void pixel2metric_facedown(double alt, vector<double> obj_pix, vector<double> &O
 
   //double O_mx = r_p[0]/3779.527;
   if(T_y<PIXELS[1]/2){
-    O_my = alt*tan(THETA+psi/2);
+    O_my = alt*tan(THETA_Y+psi/2);
   }else{ 
-    O_my=alt*tan(THETA-psi/2);  
+    O_my=alt*tan(THETA_Y-psi/2);  
   }
   
   // O_m[0] = O_mx;
@@ -119,7 +129,18 @@ void centerPoint(const darknet_ros_msgs::BoundingBoxes::ConstPtr& msgBox)
   obj_pix.push_back(xCenter);
   obj_pix.push_back(yCenter);
   vector<double> O_m;
-  pixel2metric_facedown(alt, obj_pix, O_m);
+  cout << boxesFound << endl;
+  orientation frameParam;
+  for(int i=0; i<=5; i++)
+  {
+    if(boxesFound.header.frame_id == CAMPARAMS[i].frame_id)
+    {
+      frameParam = CAMPARAMS[i];
+      break;
+    }
+  }
+  ROS_INFO("camera ID %s", frameParam.frame_id.c_str());
+  pixel2metric_facedown(alt, obj_pix, O_m, frameParam);
 }
 int main(int argc, char **argv)
 {
@@ -134,19 +155,40 @@ int main(int argc, char **argv)
   ros::Publisher chatter_pub = n.advertise<geometry_msgs::PoseStamped>("roombaPose", 1000);
 
 
-  float camRoll;
-  float camPitch;
-  float camYaw;
+  orientation cam1, cam2, cam3, cam4, cam5;
 
-  ros::param::get("/camera_params/cameras/cam2/orientation/roll", camRoll);
-  ros::param::get("/camera_params/cameras/cam2/orientation/pitch", camPitch);
-  ros::param::get("/camera_params/cameras/cam2/orientation/roll", camYaw);
+  // get params
+  if (!n.hasParam("/camera_params/cameras/cam1/orientation/roll"))
+  {
+    ROS_INFO("No param named 'cam1'");
+  }else{
+    ros::param::get("/camera_params/cameras/cam1/orientation/roll", cam1.roll);
+    ros::param::get("/camera_params/cameras/cam1/orientation/pitch", cam1.pitch);
+    ros::param::get("/camera_params/cameras/cam1/orientation/roll", cam1.yaw);
+    ros::param::get("/camera_params/cameras/cam1/frame_id", cam1.frame_id);
+  }
+   if (!n.hasParam("/camera_params/cameras/cam2/orientation/roll"))
+  {
+    ROS_INFO("No param named 'cam2'");
+  }else{
+    ros::param::get("/camera_params/cameras/cam2/orientation/roll", cam2.roll);
+    ros::param::get("/camera_params/cameras/cam2/orientation/pitch", cam2.pitch);
+    ros::param::get("/camera_params/cameras/cam2/orientation/roll", cam2.yaw);
+    ros::param::get("/camera_params/cameras/cam2/frame_id", cam2.frame_id);
+  }
+  CAMPARAMS[0] = cam1; 
+  CAMPARAMS[1] = cam2;
+  CAMPARAMS[2] = cam3;
+  CAMPARAMS[3] = cam4;
+  CAMPARAMS[4] = cam5;
 
   ROS_INFO("Parameters loaded");
-  ROS_INFO("Camera orientation roll: %f pitch: %f yaw: %f", camRoll, camPitch, camYaw);
+  cout << "cam 1 id \n" << CAMPARAMS[1].frame_id.c_str() << endl;
+  //ROS_INFO("Camera orientation roll: %f pitch: %f yaw: %f", camRoll, camPitch, camYaw);
   ROS_INFO("Node Started");
 
-  THETA = camPitch;
+  THETA_Y = cam1.pitch;
+  THETA_X = cam1.roll;
   
 
   ros::Rate loop_rate(10);

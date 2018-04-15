@@ -12,6 +12,11 @@
 #include <vector>
 #include <string>
 #include <cmath>
+#include "opencv2/core/version.hpp"
+
+int W = 1000; // width of gui
+int gridM = 20; // size of grid in meters
+
 const double PI = 3.14159;
 //field of view y
 const double PHI = 31.8244*PI/180;
@@ -29,6 +34,8 @@ geometry_msgs::PoseStamped roombaPose;
 nav_msgs::Odometry current_pose;
 std_msgs::Float64 gymOffset;
 
+
+
 struct orientation
 {
   float roll;
@@ -37,6 +44,18 @@ struct orientation
   string frame_id;
 };
 orientation CAMPARAMS[5];
+// void grid(Mat img)
+// {
+//   img = Mat::zeros(W, W, CV_8UC3);
+//   int pixPM = W / gridM;
+//   for (int i = 1; i < gridM; i++)
+//   {
+//     line(img, Point(1, i*(W / gridM)), Point(W, i*(W / gridM)), Scalar(0, 255, 255), 2, 8);
+//     line(img, Point(i*(W / gridM), 1), Point(i*(W / gridM), W), Scalar(0, 255, 255), 2, 8);
+//   }
+
+  
+// }
 void enu_2_gym(nav_msgs::Odometry current_pose_enu)
 {
   float GYM_OFFSET = gymOffset.data;
@@ -50,7 +69,7 @@ void enu_2_gym(nav_msgs::Odometry current_pose_enu)
   current_pose.pose.pose.position.x = X;
   current_pose.pose.pose.position.y = Y;
   current_pose.pose.pose.position.z = Z;
-  ROS_INFO("pose gym x: %f y: %f z: %f", current_pose.pose.pose.position.x, current_pose.pose.pose.position.y, current_pose.pose.pose.position.z);
+  //ROS_INFO("pose gym x: %f y: %f z: %f", current_pose.pose.pose.position.x, current_pose.pose.pose.position.y, current_pose.pose.pose.position.z);
  
 }
 //get current position of drone
@@ -65,9 +84,10 @@ void gym_cb(const std_msgs::Float64::ConstPtr& msg)
   gymOffset = *msg;
   //ROS_INFO("current heading: %f", current_heading.data);
 }
-void pixel2metric_facedown(double alt, vector<double> obj_pix, vector<double> &O_m, orientation camparamOfFrame)
+geometry_msgs::PoseStamped pixel2metric_facedown(double alt, vector<double> obj_pix, vector<double> &O_m, orientation camparamOfFrame)
 {	//find puxel of interest in x direction
 	THETA_Y = camparamOfFrame.pitch*(M_PI/180);
+  THETA_Y = camparamOfFrame.roll*(M_PI/180);
   double T_x=obj_pix[0];
 	double psi_x;
 	double O_mx;
@@ -100,7 +120,8 @@ void pixel2metric_facedown(double alt, vector<double> obj_pix, vector<double> &O
   roombaPose.pose.position.x = O_mx + current_pose.pose.pose.position.x;
   roombaPose.pose.position.y = O_my + current_pose.pose.pose.position.y;
   roombaPose.pose.position.z = 2.9;
-  ROS_INFO("roombaPose gym x: %f y: %f z: %f", roombaPose.pose.position.x, roombaPose.pose.position.y, roombaPose.pose.position.z);
+  //ROS_INFO("roombaPose gym x: %f y: %f z: %f", roombaPose.pose.position.x, roombaPose.pose.position.y, roombaPose.pose.position.z);
+  return roombaPose;
  
 }
 
@@ -114,22 +135,8 @@ void centerPoint(const darknet_ros_msgs::BoundingBoxes::ConstPtr& msgBox)
   darknet_ros_msgs::BoundingBoxes boxesFound;
   darknet_ros_msgs::BoundingBox objectBounds;
   boxesFound = *msgBox;
-  double xCenter;
-  double yCenter;
-  for(int i=0; i < boxesFound.boundingBoxes.size(); i++)
-  {
-    objectBounds = boxesFound.boundingBoxes[i];
-    xCenter = (objectBounds.xmax + objectBounds.xmin)/2;
-    yCenter = (objectBounds.ymax + objectBounds.ymin)/2;
-    std::string objectType = objectBounds.Class;
-    ROS_INFO("%s found x: %f y: %f pixels", objectType.c_str(), xCenter, yCenter); 
-  }
-  double alt = current_pose.pose.pose.position.z;
-  vector<double> obj_pix;
-  obj_pix.push_back(xCenter);
-  obj_pix.push_back(yCenter);
-  vector<double> O_m;
   cout << boxesFound << endl;
+  // get camera mounting angles 
   orientation frameParam;
   for(int i=0; i<=5; i++)
   {
@@ -139,8 +146,34 @@ void centerPoint(const darknet_ros_msgs::BoundingBoxes::ConstPtr& msgBox)
       break;
     }
   }
+
   ROS_INFO("camera ID %s", frameParam.frame_id.c_str());
-  pixel2metric_facedown(alt, obj_pix, O_m, frameParam);
+
+  double xCenter;
+  double yCenter;
+  double alt = current_pose.pose.pose.position.z;
+  int numDetections = boxesFound.boundingBoxes.size();
+  geometry_msgs::PoseStamped roombaPoses[numDetections];
+  for(int i=0; i < boxesFound.boundingBoxes.size(); i++)
+  {
+    objectBounds = boxesFound.boundingBoxes[i];
+    xCenter = (objectBounds.xmax + objectBounds.xmin)/2;
+    yCenter = (objectBounds.ymax + objectBounds.ymin)/2;
+    std::string objectType = objectBounds.Class;
+    ROS_INFO("%s found x: %f y: %f pixels", objectType.c_str(), xCenter, yCenter); 
+
+    vector<double> obj_pix;
+    obj_pix.push_back(xCenter);
+    obj_pix.push_back(yCenter);
+    vector<double> O_m;
+    roombaPoses[i] = pixel2metric_facedown(alt, obj_pix, O_m, frameParam);
+
+  }
+  
+  cout << roombaPoses << endl;
+
+  
+  
 }
 int main(int argc, char **argv)
 {
@@ -176,6 +209,35 @@ int main(int argc, char **argv)
     ros::param::get("/camera_params/cameras/cam2/orientation/roll", cam2.yaw);
     ros::param::get("/camera_params/cameras/cam2/frame_id", cam2.frame_id);
   }
+   if (!n.hasParam("/camera_params/cameras/cam3/orientation/roll"))
+  {
+    ROS_INFO("No param named 'cam3'");
+  }else{
+    ros::param::get("/camera_params/cameras/cam3/orientation/roll", cam3.roll);
+    ros::param::get("/camera_params/cameras/cam3/orientation/pitch", cam3.pitch);
+    ros::param::get("/camera_params/cameras/cam3/orientation/roll", cam3.yaw);
+    ros::param::get("/camera_params/cameras/cam3/frame_id", cam3.frame_id);
+  }
+  cout << cam3.pitch << endl;
+   if (!n.hasParam("/camera_params/cameras/cam4/orientation/roll"))
+  {
+    ROS_INFO("No param named 'cam4'");
+  }else{
+    ros::param::get("/camera_params/cameras/cam4/orientation/roll", cam4.roll);
+    ros::param::get("/camera_params/cameras/cam4/orientation/pitch", cam4.pitch);
+    ros::param::get("/camera_params/cameras/cam4/orientation/roll", cam4.yaw);
+    ros::param::get("/camera_params/cameras/cam4/frame_id", cam4.frame_id);
+  }
+   if (!n.hasParam("/camera_params/cameras/cam5/orientation/roll"))
+  {
+    ROS_INFO("No param named 'cam5'");
+  }else{
+    ros::param::get("/camera_params/cameras/cam5/orientation/roll", cam5.roll);
+    ros::param::get("/camera_params/cameras/cam5/orientation/pitch", cam5.pitch);
+    ros::param::get("/camera_params/cameras/cam5/orientation/roll", cam5.yaw);
+    ros::param::get("/camera_params/cameras/cam5/frame_id", cam5.frame_id);
+  }
+  
   CAMPARAMS[0] = cam1; 
   CAMPARAMS[1] = cam2;
   CAMPARAMS[2] = cam3;
@@ -187,9 +249,7 @@ int main(int argc, char **argv)
   //ROS_INFO("Camera orientation roll: %f pitch: %f yaw: %f", camRoll, camPitch, camYaw);
   ROS_INFO("Node Started");
 
-  THETA_Y = cam1.pitch;
-  THETA_X = cam1.roll;
-  
+// Mat grid = Mat::zeros(W, W, CV_8UC3);
 
   ros::Rate loop_rate(10);
 
@@ -200,6 +260,8 @@ int main(int argc, char **argv)
     ros::spinOnce();
 
     loop_rate.sleep();
+    // grid(grid);
+    // imshow("positions", grid);
 
   }
 

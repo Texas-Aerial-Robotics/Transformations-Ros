@@ -13,6 +13,8 @@
 #include <string>
 #include <cmath>
 #include "opencv2/core/version.hpp"
+#include "transformations_ros/roombaPoses.h"
+#include "transformations_ros/roombaPose.h"
 
 int W = 1000; // width of gui
 int gridM = 20; // size of grid in meters
@@ -33,8 +35,7 @@ using namespace std;
 geometry_msgs::PoseStamped roombaPose;
 nav_msgs::Odometry current_pose;
 std_msgs::Float64 gymOffset;
-
-
+//transformations_ros::roombaPoses roombaPositions;
 
 struct orientation
 {
@@ -153,9 +154,14 @@ void centerPoint(const darknet_ros_msgs::BoundingBoxes::ConstPtr& msgBox)
   double yCenter;
   double alt = current_pose.pose.pose.position.z;
   int numDetections = boxesFound.boundingBoxes.size();
-  geometry_msgs::PoseStamped roombaPoses[numDetections];
+  transformations_ros::roombaPoses roombaPositions;
   for(int i=0; i < boxesFound.boundingBoxes.size(); i++)
   {
+    //safety incase there are too many detections
+    if(i>10)
+    {
+      break;
+    }
     objectBounds = boxesFound.boundingBoxes[i];
     xCenter = (objectBounds.xmax + objectBounds.xmin)/2;
     yCenter = (objectBounds.ymax + objectBounds.ymin)/2;
@@ -166,11 +172,15 @@ void centerPoint(const darknet_ros_msgs::BoundingBoxes::ConstPtr& msgBox)
     obj_pix.push_back(xCenter);
     obj_pix.push_back(yCenter);
     vector<double> O_m;
-    roombaPoses[i] = pixel2metric_facedown(alt, obj_pix, O_m, frameParam);
+    //roombaPositions.roombaPoses.push_back(pixel2metric_facedown(alt, obj_pix, O_m, frameParam));
+    //[i].header.stamp = boxesFound.header.stamp;
 
+    roombaPose = pixel2metric_facedown(alt, obj_pix, O_m, frameParam);
+    roombaPose.header.stamp = boxesFound.header.stamp;
   }
-  
-  cout << roombaPoses << endl;
+  //boundingBoxesResults_.boundingBoxes.push_back(boundingBox);
+  //chatter_pub.publish(roombaPositions);
+  cout << roombaPositions << endl;
 
   
   
@@ -255,6 +265,7 @@ int main(int argc, char **argv)
 
   while (ros::ok())
   {
+    
     chatter_pub.publish(roombaPose);
 
     ros::spinOnce();

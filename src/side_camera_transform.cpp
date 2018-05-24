@@ -86,20 +86,20 @@ void gym_cb(const std_msgs::Float64::ConstPtr& msg)
   //ROS_INFO("current heading: %f", current_heading.data);
 }
 geometry_msgs::PoseStamped pixel2metric_facedown(double alt, vector<double> obj_pix, vector<double> &O_m, orientation camparamOfFrame)
-{	//find puxel of interest in x direction
-	THETA_Y = camparamOfFrame.pitch*(M_PI/180);
+{ //find puxel of interest in x direction
+  THETA_Y = camparamOfFrame.pitch*(M_PI/180);
   THETA_Y = camparamOfFrame.roll*(M_PI/180);
   double T_x=obj_pix[0];
-	double psi_x;
-	double O_mx;
-	double O_my;
-	psi_x=2*abs(T_x/PIXELS[0]*PHI_X-PHI_X/2);
-	if(T_x>PIXELS[0]/2){
-		 O_mx=alt*tan(THETA_X+psi_x/2);
-	}else{ 
+  double psi_x;
+  double O_mx;
+  double O_my;
+  psi_x=2*abs(T_x/PIXELS[0]*PHI_X-PHI_X/2);
+  if(T_x>PIXELS[0]/2){
+     O_mx=alt*tan(THETA_X+psi_x/2);
+  }else{ 
     O_mx=alt*tan(THETA_X-psi_x/2);
-	}
-	
+  }
+  
   // find pixel of interest in y direction
   double T_y=obj_pix[1];
 
@@ -120,7 +120,7 @@ geometry_msgs::PoseStamped pixel2metric_facedown(double alt, vector<double> obj_
   ROS_INFO("transformed to x: %f y: %f meters \n", O_mx, O_my); 
   roombaPose.pose.position.x = O_mx + current_pose.pose.pose.position.x;
   roombaPose.pose.position.y = O_my + current_pose.pose.pose.position.y;
-  roombaPose.pose.position.z = 2.9;
+  roombaPose.pose.position.z = alt;
   //ROS_INFO("roombaPose gym x: %f y: %f z: %f", roombaPose.pose.position.x, roombaPose.pose.position.y, roombaPose.pose.position.z);
   return roombaPose;
  
@@ -146,7 +146,7 @@ void centerPoint(const darknet_ros_msgs::BoundingBoxes::ConstPtr& msgBox)
       frameParam = CAMPARAMS[i];
       break;
     }
-  }
+  } 
 
   ROS_INFO("camera ID %s", frameParam.frame_id.c_str());
 
@@ -155,6 +155,7 @@ void centerPoint(const darknet_ros_msgs::BoundingBoxes::ConstPtr& msgBox)
   double alt = current_pose.pose.pose.position.z;
   int numDetections = boxesFound.boundingBoxes.size();
   transformations_ros::roombaPoses roombaPositions;
+  transformations_ros::roombaPose roombaPoseMsg;
   for(int i=0; i < boxesFound.boundingBoxes.size(); i++)
   {
     //safety incase there are too many detections
@@ -172,14 +173,17 @@ void centerPoint(const darknet_ros_msgs::BoundingBoxes::ConstPtr& msgBox)
     obj_pix.push_back(xCenter);
     obj_pix.push_back(yCenter);
     vector<double> O_m;
-    //roombaPositions.roombaPoses.push_back(pixel2metric_facedown(alt, obj_pix, O_m, frameParam));
+    
+    //roombaPositions.roombaPoses.push_back();
     //[i].header.stamp = boxesFound.header.stamp;
 
-    roombaPose = pixel2metric_facedown(alt, obj_pix, O_m, frameParam);
+    roombaPoseMsg.roombaPose = pixel2metric_facedown(alt, obj_pix, O_m, frameParam);
     roombaPose.header.stamp = boxesFound.header.stamp;
+    roombaPositions.roombaPoses.push_back(roombaPoseMsg);
   }
   //boundingBoxesResults_.boundingBoxes.push_back(boundingBox);
   //chatter_pub.publish(roombaPositions);
+  
   cout << roombaPositions << endl;
 
   
@@ -195,7 +199,7 @@ int main(int argc, char **argv)
   ros::Subscriber sub2 = n.subscribe("/darknet_ros/bounding_boxes",1 ,centerPoint);
   ros::Subscriber sub = n.subscribe("/darknet_ros/found_object", 1, chatterCallback);
   ros::Subscriber gym_offset_sub = n.subscribe("/gymOffset", 1, gym_cb);
-  ros::Publisher chatter_pub = n.advertise<geometry_msgs::PoseStamped>("roombaPose", 1000);
+  ros::Publisher chatter_pub = n.advertise<transformations_ros::roombaPoses>("roombaPoses", 1000);
 
 
   orientation cam1, cam2, cam3, cam4, cam5;

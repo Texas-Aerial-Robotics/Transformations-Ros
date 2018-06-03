@@ -32,11 +32,11 @@ const double PIXELS[2] = {640, 480};
 
 
 using namespace std;
-geometry_msgs::PoseStamped roombaPose;
+//geometry_msgs::PoseStamped roombaPose;
 nav_msgs::Odometry current_pose;
 std_msgs::Float64 gymOffset;
 //transformations_ros::roombaPoses roombaPositions;
-
+transformations_ros::roombaPoses roombaPositions1;
 struct orientation
 {
   float roll;
@@ -45,18 +45,7 @@ struct orientation
   string frame_id;
 };
 orientation CAMPARAMS[5];
-// void grid(Mat img)
-// {
-//   img = Mat::zeros(W, W, CV_8UC3);
-//   int pixPM = W / gridM;
-//   for (int i = 1; i < gridM; i++)
-//   {
-//     line(img, Point(1, i*(W / gridM)), Point(W, i*(W / gridM)), Scalar(0, 255, 255), 2, 8);
-//     line(img, Point(i*(W / gridM), 1), Point(i*(W / gridM), W), Scalar(0, 255, 255), 2, 8);
-//   }
 
-  
-// }
 void enu_2_gym(nav_msgs::Odometry current_pose_enu)
 {
   float GYM_OFFSET = gymOffset.data;
@@ -115,9 +104,8 @@ geometry_msgs::PoseStamped pixel2metric_facedown(double alt, vector<double> obj_
     O_my=alt*tan(THETA_Y-psi/2);  
   }
   
-  // O_m[0] = O_mx;
-  // O_m[1] = O_my;
   ROS_INFO("transformed to x: %f y: %f meters \n", O_mx, O_my); 
+  geometry_msgs::PoseStamped roombaPose;
   roombaPose.pose.position.x = O_mx + current_pose.pose.pose.position.x;
   roombaPose.pose.position.y = O_my + current_pose.pose.pose.position.y;
   roombaPose.pose.position.z = alt;
@@ -136,7 +124,7 @@ void centerPoint(const darknet_ros_msgs::BoundingBoxes::ConstPtr& msgBox)
   darknet_ros_msgs::BoundingBoxes boxesFound;
   darknet_ros_msgs::BoundingBox objectBounds;
   boxesFound = *msgBox;
-  cout << boxesFound << endl;
+  //cout << boxesFound << endl;
   // get camera mounting angles 
   orientation frameParam;
   for(int i=0; i<=5; i++)
@@ -156,6 +144,8 @@ void centerPoint(const darknet_ros_msgs::BoundingBoxes::ConstPtr& msgBox)
   int numDetections = boxesFound.boundingBoxes.size();
   transformations_ros::roombaPoses roombaPositions;
   transformations_ros::roombaPose roombaPoseMsg;
+
+  //apply transformation to each detection and repackage for stratnode
   for(int i=0; i < boxesFound.boundingBoxes.size(); i++)
   {
     //safety incase there are too many detections
@@ -173,18 +163,14 @@ void centerPoint(const darknet_ros_msgs::BoundingBoxes::ConstPtr& msgBox)
     obj_pix.push_back(xCenter);
     obj_pix.push_back(yCenter);
     vector<double> O_m;
-    
-    //roombaPositions.roombaPoses.push_back();
-    //[i].header.stamp = boxesFound.header.stamp;
 
-    roombaPoseMsg.roombaPose = pixel2metric_facedown(alt, obj_pix, O_m, frameParam);
-    roombaPose.header.stamp = boxesFound.header.stamp;
+    roombaPoseMsg.roombaPose = pixel2metric_facedown(alt, obj_pix, O_m, frameParam); 
+    roombaPoseMsg.roombaPose.header.stamp = boxesFound.header.stamp;
+    roombaPoseMsg.roombaPose.header.frame_id = frameParam.frame_id;
     roombaPositions.roombaPoses.push_back(roombaPoseMsg);
   }
-  //boundingBoxesResults_.boundingBoxes.push_back(boundingBox);
-  //chatter_pub.publish(roombaPositions);
-  
-  cout << roombaPositions << endl;
+  //cout << roombaPositions << endl;
+  roombaPositions1 = roombaPositions;
 
   
   
@@ -213,6 +199,7 @@ int main(int argc, char **argv)
     ros::param::get("/camera_params/cameras/cam1/orientation/pitch", cam1.pitch);
     ros::param::get("/camera_params/cameras/cam1/orientation/roll", cam1.yaw);
     ros::param::get("/camera_params/cameras/cam1/frame_id", cam1.frame_id);
+    ROS_INFO("Camera 1 Parameters loaded");
   }
    if (!n.hasParam("/camera_params/cameras/cam2/orientation/roll"))
   {
@@ -222,6 +209,7 @@ int main(int argc, char **argv)
     ros::param::get("/camera_params/cameras/cam2/orientation/pitch", cam2.pitch);
     ros::param::get("/camera_params/cameras/cam2/orientation/roll", cam2.yaw);
     ros::param::get("/camera_params/cameras/cam2/frame_id", cam2.frame_id);
+    ROS_INFO("Camera 2 Parameters loaded");
   }
    if (!n.hasParam("/camera_params/cameras/cam3/orientation/roll"))
   {
@@ -231,8 +219,8 @@ int main(int argc, char **argv)
     ros::param::get("/camera_params/cameras/cam3/orientation/pitch", cam3.pitch);
     ros::param::get("/camera_params/cameras/cam3/orientation/roll", cam3.yaw);
     ros::param::get("/camera_params/cameras/cam3/frame_id", cam3.frame_id);
+    ROS_INFO("Camera 3 Parameters loaded");
   }
-  cout << cam3.pitch << endl;
    if (!n.hasParam("/camera_params/cameras/cam4/orientation/roll"))
   {
     ROS_INFO("No param named 'cam4'");
@@ -241,6 +229,7 @@ int main(int argc, char **argv)
     ros::param::get("/camera_params/cameras/cam4/orientation/pitch", cam4.pitch);
     ros::param::get("/camera_params/cameras/cam4/orientation/roll", cam4.yaw);
     ros::param::get("/camera_params/cameras/cam4/frame_id", cam4.frame_id);
+    ROS_INFO("Camera 4 Parameters loaded");
   }
    if (!n.hasParam("/camera_params/cameras/cam5/orientation/roll"))
   {
@@ -250,6 +239,7 @@ int main(int argc, char **argv)
     ros::param::get("/camera_params/cameras/cam5/orientation/pitch", cam5.pitch);
     ros::param::get("/camera_params/cameras/cam5/orientation/roll", cam5.yaw);
     ros::param::get("/camera_params/cameras/cam5/frame_id", cam5.frame_id);
+    ROS_INFO("Camera 5 Parameters loaded");
   }
   
   CAMPARAMS[0] = cam1; 
@@ -259,24 +249,18 @@ int main(int argc, char **argv)
   CAMPARAMS[4] = cam5;
 
   ROS_INFO("Parameters loaded");
-  cout << "cam 1 id \n" << CAMPARAMS[1].frame_id.c_str() << endl;
-  //ROS_INFO("Camera orientation roll: %f pitch: %f yaw: %f", camRoll, camPitch, camYaw);
   ROS_INFO("Node Started");
-
-// Mat grid = Mat::zeros(W, W, CV_8UC3);
 
   ros::Rate loop_rate(10);
 
   while (ros::ok())
   {
     
-    chatter_pub.publish(roombaPose);
+    chatter_pub.publish(roombaPositions1);
 
     ros::spinOnce();
 
     loop_rate.sleep();
-    // grid(grid);
-    // imshow("positions", grid);
 
   }
 

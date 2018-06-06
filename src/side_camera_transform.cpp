@@ -12,7 +12,6 @@
 #include <vector>
 #include <string>
 #include <cmath>
-#include "opencv2/core/version.hpp"
 #include "transformations_ros/roombaPoses.h"
 #include "transformations_ros/roombaPose.h"
 

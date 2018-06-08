@@ -34,6 +34,7 @@ nav_msgs::Odometry current_pose;
 std_msgs::Float64 gymOffset;
 transformations_ros::roombaPoses roombaPositions1;
 sensor_msgs::Imu IMU;
+std_msgs::Float64 current_heading;
 
 struct orientation
 {
@@ -61,6 +62,11 @@ void enu_2_gym(nav_msgs::Odometry current_pose_enu)
   current_pose.pose.pose.position.z = Z;
   //ROS_INFO("pose gym x: %f y: %f z: %f", current_pose.pose.pose.position.x, current_pose.pose.pose.position.y, current_pose.pose.pose.position.z);
  
+}
+void heading_cb(const std_msgs::Float64::ConstPtr& msg)
+{
+  current_heading = *msg;
+  //ROS_INFO("current heading: %f", current_heading.data);
 }
 //get current orientation of drone
 void imu_cb(const sensor_msgs::Imu::ConstPtr& msg)
@@ -120,44 +126,56 @@ float theta_y_offset;
   
   //find pixel of interest in x direction
 	double THETA_Y = camparamOfFrame.pitch*(M_PI/180)+theta_y_offset;
-	double THETA_X = theta_x_offset;
+	double THETA_X = camparamOfFrame.roll*(M_PI/180)+theta_x_offset;
 	double T_x=obj_pix[0];
 	double psi_x;
 	double O_mx;
 
 	psi_x=2*abs(T_x/PIXELS[0]*PHI_X-PHI_X/2);
-	if(T_x>PIXELS[0]/2){
-	 O_mx=alt*tan(THETA_X+psi_x/2);
-	}else{ 
-	O_mx=alt*tan(THETA_X-psi_x/2);
-	}
+    // find pixel of interest in y direction
+  double T_y=obj_pix[1];
+  double O_my;
+  double psi_y;
+  double hyp_x;
+  double hyp_y;
+  //calculate slice of field of interest
+  psi_y=2*abs(T_y/PIXELS[1]*PHI_Y-PHI_Y/2);
+  double gamma_y;
+  double gamma_x;
+  //double O_mx = r_p[0]/3779.527;
+  if(T_y<PIXELS[1]/2){
+  gamma_y= THETA_Y+psi_y/2; 
+  }else{ 
+  gamma_y= THETA_Y-psi_y/2;  
+  }
+  hyp_x=alt/cos(gamma_y);
+  if(T_x>PIXELS[0]/2){
+  gamma_x=THETA_X+psi_x/2;
+  }else{ 
+  gamma_x=THETA_X-psi_x/2;
+  }
+  hyp_y=alt/cos(gamma_x);
   
-	// find pixel of interest in y direction
-	double T_y=obj_pix[1];
-	double O_my;
-	double psi_y;
-	//calculate slice of field of interest
-	psi_y=2*abs(T_y/PIXELS[1]*PHI_Y-PHI_Y/2);
+  O_mx=hyp_x*tan(gamma_x);
+  O_my = alt*tan(gamma_y);
 
 
-	//double O_mx = r_p[0]/3779.527;
-	if(T_y<PIXELS[1]/2){
-	O_my = alt*tan(THETA_Y+psi_y/2);
-	}else{ 
-	O_my=alt*tan(THETA_Y-psi_y/2);  
-	}
-  
 	ROS_INFO("transformed to x: %f y: %f meters \n", O_mx, O_my); 
 	
+
 	//put transformed point in drone reference frame
 	float GYM_OFFSET = gymOffset.data;
 	float deg2rad = (M_PI/180);
 	float O_mx_drone = O_mx*cos(camparamOfFrame.yaw*deg2rad) - O_my*sin(camparamOfFrame.yaw*deg2rad);
 	float O_my_drone = O_mx*sin(camparamOfFrame.yaw*deg2rad) + O_my*cos(camparamOfFrame.yaw*deg2rad);
 
+  //put point in gym reference frame
+  float X = O_mx_drone*cos(-(GYM_OFFSET+current_heading.data)*deg2rad) - O_my_drone*sin(-(GYM_OFFSET+current_heading.data)*deg2rad);
+  float Y = O_mx_drone*sin(-(GYM_OFFSET+current_heading.data)*deg2rad) + O_my_drone*cos(-(GYM_OFFSET+current_heading.data)*deg2rad);
+
 	geometry_msgs::PoseStamped roombaPose;
-	roombaPose.pose.position.x = O_mx_drone + current_pose.pose.pose.position.x;
-	roombaPose.pose.position.y = O_my_drone + current_pose.pose.pose.position.y;
+	roombaPose.pose.position.x = X + current_pose.pose.pose.position.x;
+	roombaPose.pose.position.y = Y + current_pose.pose.pose.position.y;
 	roombaPose.pose.position.z = 0;
 	ROS_INFO("roombaPose gym x: %f y: %f z: %f", roombaPose.pose.position.x, roombaPose.pose.position.y, roombaPose.pose.position.z);
 	return roombaPose;
@@ -232,6 +250,7 @@ int main(int argc, char **argv)
   
   ros::NodeHandle n;
   ros::Subscriber currentPos = n.subscribe<nav_msgs::Odometry>("mavros/global_position/local", 1, pose_cb);
+  ros::Subscriber currentHeading = n.subscribe<std_msgs::Float64>("mavros/global_position/compass_hdg", 1, heading_cb);
   ros::Subscriber currentIMU = n.subscribe<sensor_msgs::Imu>("/mavros/imu/data", 1, imu_cb);
   ros::Subscriber sub2 = n.subscribe("/darknet_ros/bounding_boxes",1 ,centerPoint);
   ros::Subscriber sub = n.subscribe("/darknet_ros/found_object", 1, chatterCallback);

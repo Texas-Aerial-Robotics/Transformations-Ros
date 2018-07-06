@@ -1,3 +1,4 @@
+gymOffSet: 254
 cameras:
   cam1:
     frame_id: "camera_link"

@@ -60,7 +60,7 @@ void enu_2_gym(nav_msgs::Odometry current_pose_enu)
   current_pose.pose.pose.position.x = X;
   current_pose.pose.pose.position.y = Y;
   current_pose.pose.pose.position.z = Z;
-  //ROS_INFO("pose gym x: %f y: %f z: %f", current_pose.pose.pose.position.x, current_pose.pose.pose.position.y, current_pose.pose.pose.position.z);
+  
  
 }
 void heading_cb(const std_msgs::Float64::ConstPtr& msg)
@@ -88,7 +88,7 @@ void imu_cb(const sensor_msgs::Imu::ConstPtr& msg)
   current_orientation.yaw=psi;
 
 
-  cout<<"roll :" << phi*(180/M_PI) << " pitch : " << theta*(180/M_PI) << " yaw : " << psi*(180/M_PI) << endl;
+  //cout<<"roll :" << phi*(180/M_PI) << " pitch : " << theta*(180/M_PI) << " yaw : " << psi*(180/M_PI) << endl;
 
 }
 //get current position of drone
@@ -168,15 +168,16 @@ float theta_y_offset;
 	float deg2rad = (M_PI/180);
 	float O_mx_drone = O_mx*cos(camparamOfFrame.yaw*deg2rad) - O_my*sin(camparamOfFrame.yaw*deg2rad);
 	float O_my_drone = O_mx*sin(camparamOfFrame.yaw*deg2rad) + O_my*cos(camparamOfFrame.yaw*deg2rad);
-
+  //ROS_INFO("cam params to x: %f y: %f meters \n", O_mx_drone, O_my_drone);
   //put point in gym reference frame
-  float X = O_mx_drone*cos(-(GYM_OFFSET+current_heading.data)*deg2rad) - O_my_drone*sin(-(GYM_OFFSET+current_heading.data)*deg2rad);
-  float Y = O_mx_drone*sin(-(GYM_OFFSET+current_heading.data)*deg2rad) + O_my_drone*cos(-(GYM_OFFSET+current_heading.data)*deg2rad);
+  float X = O_mx_drone*cos(-(current_heading.data-GYM_OFFSET )*deg2rad) - O_my_drone*sin(-(current_heading.data-GYM_OFFSET)*deg2rad);
+  float Y = O_mx_drone*sin(-(current_heading.data-GYM_OFFSET )*deg2rad) + O_my_drone*cos(-(current_heading.data-GYM_OFFSET)*deg2rad);
 
 	geometry_msgs::PoseStamped roombaPose;
 	roombaPose.pose.position.x = X + current_pose.pose.pose.position.x;
 	roombaPose.pose.position.y = Y + current_pose.pose.pose.position.y;
 	roombaPose.pose.position.z = 0;
+  //ROS_INFO("pose gym x: %f y: %f z: %f", current_pose.pose.pose.position.x, current_pose.pose.pose.position.y, current_pose.pose.pose.position.z);
 	ROS_INFO("roombaPose gym x: %f y: %f z: %f", roombaPose.pose.position.x, roombaPose.pose.position.y, roombaPose.pose.position.z);
 	return roombaPose;
  
@@ -310,6 +311,13 @@ int main(int argc, char **argv)
     ros::param::get("/camera_params/cameras/cam5/orientation/yaw", cam5.yaw);
     ros::param::get("/camera_params/cameras/cam5/frame_id", cam5.frame_id);
     ROS_INFO("Camera 5 Parameters loaded");
+  }
+   if (!n.hasParam("/camera_params/gymOffSet"))
+  {
+    ROS_INFO("No param named 'gymOffSet'");
+  }else{
+    ros::param::get("/camera_params/gymOffSet", gymOffset.data);
+    ROS_INFO("gymOffset Parameter loaded");
   }
   
   CAMPARAMS[0] = cam1; 

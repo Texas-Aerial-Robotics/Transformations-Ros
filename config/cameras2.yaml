@@ -6,28 +6,28 @@ cameras:
       roll: 0.0
       pitch: 0.0
       yaw: 0.0
-  cam2: 
+  cam2:
     frame_id: "camera_link2"
     orientation:
       roll: 0.0
-      pitch: 70.0
+      pitch: 60.0
       yaw: 90.0
-  cam3: 
+  cam3:
     frame_id: "camera_link3"
     orientation:
       roll: 0.0
-      pitch: 70.0
+      pitch: 60.0
       yaw: 180.0
-  cam4: 
+  cam4:
     frame_id: "camera_link4"
     orientation:
       roll: 0.0
-      pitch: 70.0
+      pitch: 60.0
       yaw: 270.0
-  cam5: 
+  cam5:
     frame_id: "camera_link5"
     orientation:
       roll: 0.0
-      pitch: 70.0
+      pitch: 60.0
       yaw: 0.0
 

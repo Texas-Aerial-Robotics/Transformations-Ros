@@ -210,19 +210,19 @@ void centerPoint(const darknet_ros_msgs::BoundingBoxes::ConstPtr& msgBox)
   double xCenter;
   double yCenter;
   double alt = current_pose.pose.pose.position.z;
-  int numDetections = boxesFound.boundingBoxes.size();
+  int numDetections = boxesFound.bounding_boxes.size();
   transformations_ros::roombaPoses roombaPositions;
   transformations_ros::roombaPose roombaPoseMsg;
 
   //apply transformation to each detection and repackage for stratnode
-  for(int i=0; i < boxesFound.boundingBoxes.size(); i++)
+  for(int i=0; i < boxesFound.bounding_boxes.size(); i++)
   {
     //safety incase there are too many detections
     if(i>10)
     {
       break;
     }
-    objectBounds = boxesFound.boundingBoxes[i];
+    objectBounds = boxesFound.bounding_boxes[i];
     xCenter = (objectBounds.xmax + objectBounds.xmin)/2;
     yCenter = (objectBounds.ymax + objectBounds.ymin)/2;
     std::string objectType = objectBounds.Class;

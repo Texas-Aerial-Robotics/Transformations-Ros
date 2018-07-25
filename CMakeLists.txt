@@ -173,12 +173,12 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-add_executable(linearTransformation src/face_down_transform.cpp)
-target_link_libraries(linearTransformation ${catkin_LIBRARIES})
+#add_executable(linearTransformation src/face_down_transform.cpp)
+#target_link_libraries(linearTransformation ${catkin_LIBRARIES})
 
 add_executable(nonlinearTransformation src/side_camera_transform.cpp)
 add_dependencies(nonlinearTransformation transformations_ros_generate_messages_cpp)
 target_link_libraries(nonlinearTransformation ${catkin_LIBRARIES})
 
-add_executable(simpleTransform src/simpleTransform.cpp)
-target_link_libraries(simpleTransform ${catkin_LIBRARIES})
+#add_executable(simpleTransform src/simpleTransform.cpp)
+#target_link_libraries(simpleTransform ${catkin_LIBRARIES})

@@ -19,6 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
   tf2
+  geometry_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -37,8 +38,8 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
 add_message_files(
 	FILES
-	roombaPose.msg
-	roombaPoses.msg
+  object.msg
+  objects.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -173,12 +174,6 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-#add_executable(linearTransformation src/face_down_transform.cpp)
-#target_link_libraries(linearTransformation ${catkin_LIBRARIES})
-
 add_executable(nonlinearTransformation src/side_camera_transform.cpp)
 add_dependencies(nonlinearTransformation transformations_ros_generate_messages_cpp)
 target_link_libraries(nonlinearTransformation ${catkin_LIBRARIES})
-
-#add_executable(simpleTransform src/simpleTransform.cpp)
-#target_link_libraries(simpleTransform ${catkin_LIBRARIES})

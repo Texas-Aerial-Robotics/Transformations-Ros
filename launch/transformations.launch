@@ -1,4 +1,4 @@
 <launch>
-     <rosparam command="load" ns="camera_params" file="$(find transformations_ros)/config/cameras2.yaml"/>
+     <rosparam command="load" ns="camera_params" file="$(find transformations_ros)/config/cameras.yaml"/>
      <node pkg="transformations_ros" type="nonlinearTransformation" name="nonlinearTransformation" output="screen"></node>
 </launch>

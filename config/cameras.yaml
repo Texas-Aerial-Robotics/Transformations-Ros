@@ -1,21 +1,9 @@
-camera_model:
+cameras:
+  numOfCams: 1
+  cam1:
+    frame_id: "camera_link"
+    orientation:
+      rx: 60.0
+      ry: 0.0
+      rz: 0.0
 
-  camera_one:
-    ID: cam1
-    position: [0.0,0.0,0.0]
-    orientation: [0.0,0.0,0.0,0.0]
-
-  camera_two:
-    ID: cam2
-    position: [0.0,0.0,0.0]
-    orientation: [0.0,0.0,0.0,0.0]
-
-  camera_three:
-    ID: cam3
-    position: [0.0,0.0,0.0]
-    orientation: [0.0,0.0,0.0,0.0]
-
-  camera_four:
-    ID: cam4
-    position: [0.0,0.0,0.0]
-    orientation: [0.0,0.0,0.0,0.0] 
